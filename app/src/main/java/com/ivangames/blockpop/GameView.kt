@@ -8,6 +8,7 @@ import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import kotlin.math.roundToInt
 
 class GameView @JvmOverloads constructor(
     context: Context,
@@ -16,15 +17,12 @@ class GameView @JvmOverloads constructor(
 
     companion object {
         const val BOARD_SIZE = 8
+        const val CELL_GAP = 4f // отступ между кубиками
     }
 
-    // Поле 8x8, 0 = пусто, иначе — индекс цвета
     private val board = Array(BOARD_SIZE) { IntArray(BOARD_SIZE) { 0 } }
+    private val pieces = arrayOfNulls<Piece>(3)
 
-    // 3 фигуры внизу
-    private val pieces = mutableListOf<Piece?>(null, null, null)
-
-    // Текущая перетаскиваемая фигура
     private var draggingPiece: Piece? = null
     private var draggingIndex: Int = -1
     private var dragX = 0f
@@ -32,28 +30,28 @@ class GameView @JvmOverloads constructor(
     private var dragOffsetX = 0f
     private var dragOffsetY = 0f
 
-    // Счёт
     var score: Int = 0
         private set
 
     var onScoreChanged: ((Int) -> Unit)? = null
     var onGameOver: (() -> Unit)? = null
 
+    // Краски
     private val emptyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#1E1E2E")
+        color = Color.parseColor("#14141F")
     }
-    private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val emptyBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor("#2A2A3A")
         style = Paint.Style.STROKE
         strokeWidth = 2f
     }
     private val cellPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
+    // Размеры
     private var cellSize = 0f
     private var boardLeft = 0f
     private var boardTop = 0f
     private var piecesTop = 0f
-    private var pieceCellSize = 0f
 
     init {
         generatePieces()
@@ -61,7 +59,7 @@ class GameView @JvmOverloads constructor(
 
     private fun generatePieces() {
         for (i in 0..2) {
-            if (pieces.getOrNull(i) == null) {
+            if (pieces[i] == null) {
                 pieces[i] = Piece.random()
             }
         }
@@ -70,58 +68,58 @@ class GameView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
 
-        // Поле: 80% ширины
-        val boardWidth = w * 0.9f
+        val boardWidth = w * 0.92f
         cellSize = boardWidth / BOARD_SIZE
         boardLeft = (w - boardWidth) / 2f
-        boardTop = h * 0.15f
+        boardTop = h * 0.16f
 
-        // Фигуры внизу: 3 штуки
-        pieceCellSize = cellSize * 0.7f
-        piecesTop = boardTop + boardWidth + cellSize
+        piecesTop = boardTop + boardWidth + cellSize * 2f
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        // Рисуем поле
+        // ===== Поле =====
         for (r in 0 until BOARD_SIZE) {
             for (c in 0 until BOARD_SIZE) {
-                val left = boardLeft + c * cellSize
-                val top = boardTop + r * cellSize
-                val rect = RectF(left, top, left + cellSize, top + cellSize)
+                val left = boardLeft + c * cellSize + CELL_GAP / 2
+                val top = boardTop + r * cellSize + CELL_GAP / 2
+                val right = boardLeft + (c + 1) * cellSize - CELL_GAP / 2
+                val bottom = boardTop + (r + 1) * cellSize - CELL_GAP / 2
+                val rect = RectF(left, top, right, bottom)
+                val radius = cellSize * 0.18f
 
                 if (board[r][c] == 0) {
-                    canvas.drawRect(rect, emptyPaint)
+                    canvas.drawRoundRect(rect, radius, radius, emptyPaint)
+                    canvas.drawRoundRect(rect, radius, radius, emptyBorderPaint)
                 } else {
                     cellPaint.color = board[r][c]
-                    canvas.drawRect(rect, cellPaint)
+                    canvas.drawRoundRect(rect, radius, radius, cellPaint)
                 }
-                canvas.drawRect(rect, borderPaint)
             }
         }
 
-        // Рисуем 3 фигуры внизу
-        val pieceWidth = width / 3f
+        // ===== 3 фигуры внизу =====
+        val slotWidth = width / 3f
         for (i in 0..2) {
-            val piece = pieces.getOrNull(i) ?: continue
-            if (draggingIndex == i) continue // перетаскиваемая не рисуется на месте
+            val piece = pieces[i] ?: continue
+            if (draggingIndex == i) continue
 
-            val startX = i * pieceWidth + pieceWidth / 2f
-            val startY = piecesTop + pieceCellSize * 2
+            val centerX = i * slotWidth + slotWidth / 2f
+            val centerY = piecesTop + cellSize * 2f
 
-            drawPiece(canvas, piece, startX, startY)
+            drawPiece(canvas, piece, centerX, centerY, cellSize)
         }
 
-        // Перетаскиваемая фигура
+        // ===== Перетаскиваемая фигура =====
         draggingPiece?.let {
-            drawPiece(canvas, it, dragX - dragOffsetX, dragY - dragOffsetY)
+            drawPiece(canvas, it, dragX - dragOffsetX, dragY - dragOffsetY, cellSize)
         }
     }
 
-    private fun drawPiece(canvas: Canvas, piece: Piece, centerX: Float, centerY: Float) {
-        val w = piece.width * pieceCellSize
-        val h = piece.height * pieceCellSize
+    private fun drawPiece(canvas: Canvas, piece: Piece, centerX: Float, centerY: Float, size: Float) {
+        val w = piece.width * size
+        val h = piece.height * size
         val startX = centerX - w / 2f
         val startY = centerY - h / 2f
 
@@ -130,10 +128,13 @@ class GameView @JvmOverloads constructor(
         for (r in 0 until piece.height) {
             for (c in 0 until piece.width) {
                 if (piece.shape[r][c] == 1) {
-                    val left = startX + c * pieceCellSize
-                    val top = startY + r * pieceCellSize
-                    val rect = RectF(left, top, left + pieceCellSize, top + pieceCellSize)
-                    canvas.drawRect(rect, cellPaint)
+                    val left = startX + c * size + CELL_GAP / 2
+                    val top = startY + r * size + CELL_GAP / 2
+                    val right = startX + (c + 1) * size - CELL_GAP / 2
+                    val bottom = startY + (r + 1) * size - CELL_GAP / 2
+                    val rect = RectF(left, top, right, bottom)
+                    val radius = size * 0.18f
+                    canvas.drawRoundRect(rect, radius, radius, cellPaint)
                 }
             }
         }
@@ -142,24 +143,27 @@ class GameView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                val pieceWidth = width / 3f
-                val idx = (event.x / pieceWidth).toInt()
-                if (idx in 0..2 && event.y > piecesTop) {
-                    val piece = pieces.getOrNull(idx) ?: return false
-                    draggingIndex = idx
-                    draggingPiece = piece
-                    dragX = event.x
-                    dragY = event.y
+                val slotWidth = width / 3f
+                val idx = (event.x / slotWidth).toInt().coerceIn(0, 2)
+                if (event.y > piecesTop - cellSize && pieces[idx] != null) {
+                    val piece = pieces[idx] ?: return false
 
                     // Смещение от центра фигуры
-                    val pieceCenterX = idx * pieceWidth + pieceWidth / 2f
-                    val pieceCenterY = piecesTop + pieceCellSize * 2
+                    val pieceCenterX = idx * slotWidth + slotWidth / 2f
+                    val pieceCenterY = piecesTop + cellSize * 2f
+
                     dragOffsetX = event.x - pieceCenterX
                     dragOffsetY = event.y - pieceCenterY
 
+                    draggingPiece = piece
+                    draggingIndex = idx
+                    dragX = event.x
+                    dragY = event.y
+                    invalidate()
                     return true
                 }
             }
+
             MotionEvent.ACTION_MOVE -> {
                 if (draggingPiece != null) {
                     dragX = event.x
@@ -168,7 +172,8 @@ class GameView @JvmOverloads constructor(
                     return true
                 }
             }
-            MotionEvent.ACTION_UP -> {
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 if (draggingPiece != null) {
                     tryPlacePiece()
                     draggingPiece = null
@@ -184,31 +189,29 @@ class GameView @JvmOverloads constructor(
     private fun tryPlacePiece() {
         val piece = draggingPiece ?: return
 
-        // Координаты левого-верхнего угла фигуры
-        val left = dragX - dragOffsetX - piece.width * pieceCellSize / 2f
-        val top = dragY - dragOffsetY - piece.height * pieceCellSize / 2f
+        // Центр фигуры при отпускании
+        val centerX = dragX - dragOffsetX
+        val centerY = dragY - dragOffsetY
 
-        // Позиция на поле
+        // Левый-верхний угол фигуры (по центру)
+        val left = centerX - piece.width * cellSize / 2f
+        val top = centerY - piece.height * cellSize / 2f
+
+        // В клетках поля
         val col = ((left - boardLeft) / cellSize).roundToInt()
         val row = ((top - boardTop) / cellSize).roundToInt()
 
-        // Проверка границ
         if (row < 0 || col < 0 ||
             row + piece.height > BOARD_SIZE ||
-            col + piece.width > BOARD_SIZE) {
-            return
-        }
+            col + piece.width > BOARD_SIZE
+        ) return
 
-        // Проверка, что все клетки пустые
         for (r in 0 until piece.height) {
             for (c in 0 until piece.width) {
-                if (piece.shape[r][c] == 1 && board[row + r][col + c] != 0) {
-                    return
-                }
+                if (piece.shape[r][c] == 1 && board[row + r][col + c] != 0) return
             }
         }
 
-        // Ставим фигуру
         for (r in 0 until piece.height) {
             for (c in 0 until piece.width) {
                 if (piece.shape[r][c] == 1) {
@@ -217,27 +220,16 @@ class GameView @JvmOverloads constructor(
             }
         }
 
-        // Очки
         score += countCells(piece) * 2
-
-        // Сброс фигуры на месте
         pieces[draggingIndex] = null
 
-        // Проверка рядов
         clearLines()
 
-        // Генерируем новые, если все израсходованы
-        if (pieces.all { it == null }) {
-            generatePieces()
-        }
+        if (pieces.all { it == null }) generatePieces()
 
-        // Проверка на конец игры
-        if (!canPlaceAny()) {
-            onGameOver?.invoke()
-        }
+        if (!canPlaceAny()) onGameOver?.invoke()
 
         onScoreChanged?.invoke(score)
-        invalidate()
     }
 
     private fun countCells(piece: Piece): Int {
@@ -253,21 +245,17 @@ class GameView @JvmOverloads constructor(
     private fun clearLines() {
         val toClear = mutableSetOf<Pair<Int, Int>>()
 
-        // Строки
         for (r in 0 until BOARD_SIZE) {
             if (board[r].all { it != 0 }) {
                 for (c in 0 until BOARD_SIZE) toClear.add(r to c)
             }
         }
-
-        // Столбцы
         for (c in 0 until BOARD_SIZE) {
             if ((0 until BOARD_SIZE).all { board[it][c] != 0 }) {
                 for (r in 0 until BOARD_SIZE) toClear.add(r to c)
             }
         }
 
-        // Очистка + очки
         if (toClear.isNotEmpty()) {
             for ((r, c) in toClear) board[r][c] = 0
             score += toClear.size * 10
@@ -311,6 +299,4 @@ class GameView @JvmOverloads constructor(
         onScoreChanged?.invoke(score)
         invalidate()
     }
-
-    private fun Float.roundToInt(): Int = kotlin.math.round(this).toInt()
 }

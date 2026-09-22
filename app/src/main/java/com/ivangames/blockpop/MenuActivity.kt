@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import android.widget.TextView
 
 class MenuActivity : AppCompatActivity() {
 
@@ -38,21 +39,34 @@ class MenuActivity : AppCompatActivity() {
             startActivity(Intent(this, MainActivity::class.java))
         }
 
-        recordsBtn.setOnClickListener {
-            val record = prefs.getInt("record", 0)
-            AlertDialog.Builder(this)
-                .setTitle("🏆 Рекорд")
-                .setMessage("Твой лучший счёт:\n\n$record очков")
-                .setPositiveButton("OK", null)
-                .show()
-        }
+recordsBtn.setOnClickListener {
+    showRecordsDialog()
+}
 
         themesBtn.setOnClickListener {
             showThemeDialog()
         }
     }
 
-    private fun toggleTheme() {
+private fun showRecordsDialog() {
+    val view = layoutInflater.inflate(R.layout.dialog_records, null)
+    val recordValue = view.findViewById<TextView>(R.id.recordValueText)
+    val closeBtn = view.findViewById<Button>(R.id.closeRecordsBtn)
+
+    val record = prefs.getInt("record", 0)
+    recordValue.text = record.toString()
+
+    val dialog = AlertDialog.Builder(this)
+        .setView(view)
+        .setCancelable(true)
+        .create()
+
+    closeBtn.setOnClickListener { dialog.dismiss() }
+    dialog.show()
+}
+ 
+
+   private fun toggleTheme() {
         themeMode = if (themeMode == "dark") "pink" else "dark"
         prefs.edit().putString("themeMode", themeMode).apply()
         applyTheme()
