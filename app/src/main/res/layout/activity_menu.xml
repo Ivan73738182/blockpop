@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/bg_gradient"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_marginBottom="40dp">
+
+        <Button
+            android:id="@+id/themeBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🌙"
+            android:textSize="22sp"
+            android:backgroundTint="#1E1E2E"
+            android:textColor="#FFFFFF"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:padding="10dp"
+            app:cornerRadius="24dp" />
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="BLOCKPOP"
+        android:textColor="#FFFFFF"
+        android:textSize="38sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.15"
+        android:layout_marginBottom="6dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="головоломка"
+        android:textColor="#AAAAAA"
+        android:textSize="15sp"
+        android:letterSpacing="0.2"
+        android:layout_marginBottom="60dp" />
+
+    <Button
+        android:id="@+id/playBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🎮  ИГРАТЬ"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#6A1B9A"
+        android:padding="18dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:cornerRadius="20dp"
+        android:layout_marginBottom="14dp" />
+
+    <Button
+        android:id="@+id/recordsBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🏆  РЕКОРДЫ"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#2196F3"
+        android:padding="16dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:cornerRadius="20dp"
+        android:layout_marginBottom="14dp" />
+
+    <Button
+        android:id="@+id/themesBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🎨  ТЕМЫ"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#FF9800"
+        android:padding="16dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:cornerRadius="20dp" />
+
+</LinearLayout>
